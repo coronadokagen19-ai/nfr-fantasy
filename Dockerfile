@@ -29,4 +29,4 @@ ENV NODE_ENV=production PORT=8080
 COPY --from=build /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=build /app/handoff/migrations ./handoff/migrations
 EXPOSE 8080
-CMD ["sh", "-c", "psql \"$DATABASE_URL\" -f handoff/migrations/0001_initial.sql && psql \"$DATABASE_URL\" -f handoff/migrations/0002_multi_league_memberships.sql && psql \"$DATABASE_URL\" -f handoff/migrations/0003_enable_rls.sql && exec node artifacts/api-server/dist/index.mjs"]
+CMD ["sh", "-c", "if [ \"$MEMORY_ONLY\" = \"true\" ]; then exec node artifacts/api-server/dist/index.mjs; else psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f handoff/migrations/0001_initial.sql && psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f handoff/migrations/0002_multi_league_memberships.sql && psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f handoff/migrations/0003_enable_rls.sql && exec node artifacts/api-server/dist/index.mjs; fi"]
