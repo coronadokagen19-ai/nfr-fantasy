@@ -11,16 +11,22 @@ RUN pnpm install --frozen-lockfile
 
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_CLERK_PROXY_URL
+ARG VITE_TEST_MODE=true
 ARG BASE_PATH=/
 ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY \
     VITE_CLERK_PROXY_URL=$VITE_CLERK_PROXY_URL \
+    VITE_TEST_MODE=$VITE_TEST_MODE \
     BASE_PATH=$BASE_PATH
 
 RUN pnpm run qa:nfr && pnpm run qa:static && pnpm run build:release
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-client \
+ && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production PORT=8080
 COPY --from=build /app/artifacts/api-server/dist ./artifacts/api-server/dist
+COPY --from=build /app/handoff/migrations ./handoff/migrations
 EXPOSE 8080
-CMD ["node", "artifacts/api-server/dist/index.mjs"]
+CMD ["sh", "-c", "psql \"$DATABASE_URL\" -f handoff/migrations/0001_initial.sql && psql \"$DATABASE_URL\" -f handoff/migrations/0002_multi_league_memberships.sql && psql \"$DATABASE_URL\" -f handoff/migrations/0003_enable_rls.sql && exec node artifacts/api-server/dist/index.mjs"]
