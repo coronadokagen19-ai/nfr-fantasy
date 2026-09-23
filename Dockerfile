@@ -3,9 +3,13 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
 COPY NFR_Fantasy_APP_SOURCE.tar.gz.b64 /tmp/NFR_Fantasy_APP_SOURCE.tar.gz.b64
+COPY patches/live-round.tsx /tmp/live-round.tsx
 RUN base64 -d /tmp/NFR_Fantasy_APP_SOURCE.tar.gz.b64 > /tmp/NFR_Fantasy_APP_SOURCE.tar.gz \
  && tar -xzf /tmp/NFR_Fantasy_APP_SOURCE.tar.gz -C /app \
- && rm /tmp/NFR_Fantasy_APP_SOURCE.tar.gz /tmp/NFR_Fantasy_APP_SOURCE.tar.gz.b64
+ && cp /tmp/live-round.tsx /app/artifacts/nfr-fantasy-rodeo/src/pages/live-round.tsx \
+ && sed -i "s/  Radio,/  ClipboardList,/" /app/artifacts/nfr-fantasy-rodeo/src/components/layout/shell.tsx \
+ && sed -i "s/{ href: '\/live-round', label: 'Live Round', icon: Radio },/{ href: '\/live-round', label: 'Round Recap', icon: ClipboardList },/" /app/artifacts/nfr-fantasy-rodeo/src/components/layout/shell.tsx \
+ && rm /tmp/NFR_Fantasy_APP_SOURCE.tar.gz /tmp/NFR_Fantasy_APP_SOURCE.tar.gz.b64 /tmp/live-round.tsx
 
 RUN pnpm install --frozen-lockfile
 
